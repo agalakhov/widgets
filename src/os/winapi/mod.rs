@@ -1,11 +1,18 @@
 extern crate winapi;
+extern crate kernel32;
 extern crate user32;
 
-mod window;
+pub mod window;
 mod button;
 
 #[derive(Debug)]
-pub struct Error;
+pub struct Error(winapi::DWORD);
+
+impl Error {
+  fn get() -> Error {
+    Error(unsafe { kernel32::GetLastError() })
+  }
+}
 
 pub fn run_once() -> Result<bool, Error> {
   let mut msg = winapi::MSG {
@@ -19,7 +26,7 @@ pub fn run_once() -> Result<bool, Error> {
 
   let result = unsafe { user32::GetMessageW(&mut msg, 0 as winapi::HWND, 0, 0) };
   if result < 0 {
-      return Err(Error);
+      return Err(Error::get());
   }
   if result == 0 {
       return Ok(false);

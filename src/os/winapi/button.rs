@@ -4,9 +4,11 @@ use widgets;
 
 pub struct Button(winapi::HWND);
 
-impl Button {
-    fn new() -> Button {
-        
-    }
-}
 
+
+
+impl Button {
+//    fn new() -> Button {
+//        
+//    }
+}

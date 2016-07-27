@@ -1,40 +1,45 @@
 extern crate winapi;
 extern crate user32;
 
-use widgets;
+use os::winapi::Error;
+use widgets::{Point, Size, Rect};
 
+use self::winapi::{DWORD, c_int};
+use std::ptr::{null, null_mut};
+
+#[derive(Debug)]
 pub struct Window {
     hwnd: winapi::HWND,
+}
+
+pub struct WindowType<'t> {
+    pub class: &'t str,
+    pub style: winapi::DWORD,
+    pub stylex: winapi::DWORD,
 }
 
 pub trait IntoWindow {
     fn into_window(&self) -> &Window;
 }
 
-trait HasLabel { }
-
-fn to_wchar(text: &str) -> Vec<winapi::WCHAR> {
-}
-
-impl<T> widgets::Label for T
-where T : IntoWindow + HasLabel {
-
-    fn get_text(&self) -> String {
-        let hwnd = self.into_window().hwnd;
-        let size = unsafe { user32::GetWindowTextLengthW(hwnd) };
-        let wtext = Vec::<winapi::WCHAR>::with_capacity(size);
-        unsafe {
-            let len = user32::GetWindowTextW(hwnd, wtext.as_mut_ptr(), wtext.capacity());
-            wtext.set_size(len);
+impl Window {
+    pub fn create(window_type: &WindowType, title: &str, parent: Option<Window>, rect: &Rect) -> Result<Window, Error> {
+        let raw_parent = parent.map_or(0 as winapi::HWND, |w| w.hwnd);
+        let hwnd = unsafe { user32::CreateWindowExA(window_type.stylex,
+                                                    window_type.class.as_ptr() as *const i8,
+                                                    title.as_ptr() as *const i8,
+                                                    window_type.style,
+                                                    rect.p.x as c_int, rect.p.y as c_int,
+                                                    rect.s.w as c_int, rect.s.h as c_int,
+                                                    raw_parent,
+                                                    0 as winapi::HMENU, 0 as winapi::HINSTANCE, null_mut())};
+        // FIXME
+        if ! hwnd.is_null() {
+            unsafe {
+                user32::ShowWindow(hwnd, 1);
+                user32::UpdateWindow(hwnd);
+            }
         }
+        if hwnd.is_null() { Err(Error::get()) } else { Ok(Window { hwnd : hwnd }) }
     }
-
-    fn set_text(&mut self, text: &str) {
-        let hwnd = self.into_window().hwnd;
-        let wtext = to_wchar(text);
-        unsafe {
-            user32::SetWindowTextW(hwnd, wtext.as_ptr());
-        }
-    }
-
 }

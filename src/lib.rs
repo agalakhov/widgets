@@ -1,5 +1,5 @@
+pub mod widgets;
 mod os;
-mod widgets;
 
 #[cfg(windows)]
 pub use os::winapi::*;
